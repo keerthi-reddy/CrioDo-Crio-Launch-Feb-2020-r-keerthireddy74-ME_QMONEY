@@ -1,0 +1,2 @@
+"https://api.tiingo.com/tiingo/daily/aapl/prices?startDate=2019-01-02&token=dcec30ee2bde0aef1bff3e7b63d0e539db020c7c"
+"https://api.tiingo.com/tiingo/daily//prices?startDate=2019-01-02&token=dcec30ee2bde0aef1bff3e7b63d0e539db020c7c"
