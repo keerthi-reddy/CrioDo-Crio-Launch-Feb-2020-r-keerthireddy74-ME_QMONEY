@@ -1,4 +1,5 @@
 package com.crio.warmup.stock;
+
 import com.crio.warmup.stock.dto.PortfolioTrade;
 import com.crio.warmup.stock.dto.TiingoCandle;
 import com.crio.warmup.stock.dto.TotalReturnsDto;
@@ -19,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -63,7 +63,8 @@ public class PortfolioManagerApplication {
   }
 
   private static File resolveFileFromResources(String filename) throws URISyntaxException {
-    return Paths.get(Thread.currentThread().getContextClassLoader().getResource(filename).toURI()).toFile();
+    return Paths.get(Thread.currentThread().getContextClassLoader().getResource(filename)
+    .toURI()).toFile();
   }
 
   private static ObjectMapper getObjectMapper() {
@@ -115,8 +116,9 @@ public class PortfolioManagerApplication {
     String functionNameFromTestFileInStackTrace = "mainReadFile";
     String lineNumberFromTestFileInStackTrace = "22";
 
-    return Arrays.asList(new String[] { valueOfArgument0, resultOfResolveFilePathArgs0, toStringOfObjectMapper,
-        functionNameFromTestFileInStackTrace, lineNumberFromTestFileInStackTrace });
+    return Arrays.asList(new String[] { valueOfArgument0, resultOfResolveFilePathArgs0, 
+      toStringOfObjectMapper,functionNameFromTestFileInStackTrace, 
+      lineNumberFromTestFileInStackTrace });
   }
 
   public static void main(String[] args) throws Exception {
@@ -149,20 +151,23 @@ public class PortfolioManagerApplication {
   // ./gradlew run --args="trades.json 2019-07-01"
   // ./gradlew run --args="trades.json 2019-12-03"
   // And make sure that its printing correct results.
-  public static Comparator<TotalReturnsDto> priceComparator = new Comparator<TotalReturnsDto>() {               
+
+  public static final Comparator<TotalReturnsDto> priceComparator = new 
+      Comparator<TotalReturnsDto>() {               
     public int compare(TotalReturnsDto tr1,TotalReturnsDto tr2) {             
-     return (int) (tr1.getClosingPrice().compareTo(tr2.getClosingPrice()));          
+        return (int) (tr1.getClosingPrice().compareTo(tr2.getClosingPrice()));          
     } 
   };
+
   public static List<String> mainReadQuotes(String[] args) throws URISyntaxException, IOException {
     String token = "dcec30ee2bde0aef1bff3e7b63d0e539db020c7c";
-    List<TotalReturnsDto> trdObj=new ArrayList<TotalReturnsDto>();
+    List<TotalReturnsDto> trdObj = new ArrayList<TotalReturnsDto>();
     List<PortfolioTrade> portfolioDataList = portdolioTrade(args);
     RestTemplate restTemplate = new RestTemplate();
     priceList(args, token, trdObj, portfolioDataList, restTemplate);
     Collections.sort(trdObj,priceComparator);
     List<String> symbolList = new ArrayList<String>();
-    for (int x=0;x<trdObj.size();x++) {
+    for (int x = 0;x < trdObj.size();x++) {
       symbolList.add(trdObj.get(x).getSymbol());
     }
   
@@ -170,31 +175,41 @@ public class PortfolioManagerApplication {
   }
 
   private static void priceList(String[] args, String token, List<TotalReturnsDto> trdObj,
-      List<PortfolioTrade> portfolioDataList, RestTemplate restTemplate)
-      throws JsonProcessingException, JsonMappingException {
+      List<PortfolioTrade> portfolioDataList, RestTemplate restTemplate) throws 
+          JsonProcessingException, JsonMappingException {
     for (int i = 0; i < portfolioDataList.size(); i++) {
       String ticker = portfolioDataList.get(i).getSymbol();
       LocalDate startDate = portfolioDataList.get(i).getPurchaseDate();
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
       LocalDate endDate = LocalDate.parse(args[1], formatter);
       priceListAfterSorting(token, trdObj, restTemplate, ticker, startDate, endDate);
-  }
+    }
   }
 
-  private static void priceListAfterSorting(String token, List<TotalReturnsDto> trdObj, RestTemplate restTemplate, String ticker,
-      LocalDate startDate, LocalDate endDate) throws JsonProcessingException, JsonMappingException {
+  private static void priceListAfterSorting(String token, List<TotalReturnsDto> trdObj,
+      RestTemplate restTemplate,String ticker,LocalDate startDate, LocalDate endDate)
+          throws JsonProcessingException, JsonMappingException {
     String url = "https://api.tiingo.com/tiingo/daily/" + ticker + "/prices?startDate=" + startDate + "&endDate="
         + endDate + "&token=" + token;
     String result = restTemplate.getForObject(url, String.class);
-    List<TiingoCandle> tiingoClassObj = getObjectMapper().readValue(result, new TypeReference<List<TiingoCandle>>() {
-    });
-    for(int j=0;j<tiingoClassObj.size();j++)
-    {
-    if (startDate.isBefore(endDate)&&endDate.isEqual(tiingoClassObj.get(j).getDate())) {
-      TotalReturnsDto symbolPriceMap=new TotalReturnsDto(ticker,tiingoClassObj.get(j).getClose() );
-      trdObj.add(symbolPriceMap);
+    List<TiingoCandle> tiingoClassObj = getObjectMapper().readValue(result, 
+        new TypeReference<List<TiingoCandle>>() {});
+    List<LocalDate> endDateList = new ArrayList<LocalDate>();
+    for (int j = 0;j < tiingoClassObj.size();j++) {
+      endDateList.add(tiingoClassObj.get(j).getDate());
+    }  
+    if (startDate.isAfter(endDate)) {
+      throw new RuntimeException();
     }
-  }
+    if (endDateList.contains(endDate)) {
+      for (int j = 0;j < tiingoClassObj.size();j++) {
+        if (endDate.isEqual(tiingoClassObj.get(j).getDate())) {
+          Double closingPrice = tiingoClassObj.get(j).getClose();
+          TotalReturnsDto symbolPriceMap = new TotalReturnsDto(ticker,closingPrice);
+          trdObj.add(symbolPriceMap);
+        }
+      }
+    }
   }
 
   private static List<PortfolioTrade> portdolioTrade(String[] args)

@@ -1,9 +1,9 @@
 
 package com.crio.warmup.stock.dto;
 
-import java.time.LocalDate;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.time.LocalDate;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TiingoCandle implements Candle {
