@@ -177,7 +177,7 @@ public class PortfolioManagerApplication {
           buyPrice = tiingoClassObj.get(i).getOpen();
         }
         if (!(endDList.contains(endDate))) {
-          int k = tiingoClassObj.size() - 2;
+          int k = tiingoClassObj.size() - 1;
           sellPrice = tiingoClassObj.get(k).getClose();
         } else {
           if (endDate.isEqual(tiingoClassObj.get(i).getDate())) {
