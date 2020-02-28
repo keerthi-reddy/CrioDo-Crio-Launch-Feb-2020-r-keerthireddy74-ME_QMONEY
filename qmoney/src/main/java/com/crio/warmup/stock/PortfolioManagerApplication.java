@@ -145,7 +145,7 @@ public class PortfolioManagerApplication {
       Comparator<AnnualizedReturn>() {         
     public int compare(AnnualizedReturn ar1, AnnualizedReturn ar2) {             
       return (ar2.getAnnualizedReturn() < ar1.getAnnualizedReturn() ? -1 :                     
-        (ar2.getAnnualizedReturn() == ar1.getAnnualizedReturn() ? 0 : 1));           
+        (ar2.getAnnualizedReturn().equals(ar2.getAnnualizedReturn()) ? 0 : 1));           
     }     
   }; 
 
