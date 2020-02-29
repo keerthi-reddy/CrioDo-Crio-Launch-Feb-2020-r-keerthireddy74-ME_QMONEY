@@ -5,6 +5,8 @@ import com.crio.warmup.stock.dto.PortfolioTrade;
 import com.crio.warmup.stock.dto.TiingoCandle;
 import com.crio.warmup.stock.dto.TotalReturnsDto;
 import com.crio.warmup.stock.log.UncaughtExceptionHandler;
+import com.crio.warmup.stock.portfolio.PortfolioManager;
+import com.crio.warmup.stock.portfolio.PortfolioManagerFactory;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -51,7 +53,7 @@ public class PortfolioManagerApplication {
   // pass.
 
   public static List<String> mainReadFile(String[] args) throws IOException, URISyntaxException {
-    List<PortfolioTrade> portfolioDataList = portfolioTrade(args);
+    List<PortfolioTrade> portfolioDataList = getPortfoloioTradeList(args);
     List<String> symbolList = new ArrayList<String>();
     for (int i = 0; i < portfolioDataList.size(); i++) {
       if (portfolioDataList.get(i) != null) {
@@ -125,6 +127,29 @@ public class PortfolioManagerApplication {
       toStringOfObjectMapper,functionNameFromTestFileInStackTrace, 
       lineNumberFromTestFileInStackTrace });
   }
+  
+  // TODO: CRIO_TASK_MODULE_REFACTOR
+  //  Once you are done with the implementation inside PortfolioManagerImpl and
+  //  PortfolioManagerFactory,
+  //  Create PortfolioManager using PortfoliomanagerFactory,
+  //  Refer to the code from previous modules to get the List<PortfolioTrades> and endDate, and
+  //  call the newly implemented method in PortfolioManager to calculate the annualized returns.
+  //  Test the same using the same commands as you used in module 3
+  //  use gralde command like below to test your code
+  //  ./gradlew run --args="trades.json 2020-01-01"
+  //  ./gradlew run --args="trades.json 2019-07-01"
+  //  ./gradlew run --args="trades.json 2019-12-03"
+  //  where trades.json is your json file
+  //  Confirm that you are getting same results as in Module3.
+
+  public static List<AnnualizedReturn> mainCalculateReturnsAfterRefactor(String[] args)
+      throws Exception {
+    LocalDate endDate = LocalDate.parse(args[1]);
+    PortfolioManager portfolioManager = PortfolioManagerFactory.getPortfolioManager(
+        new RestTemplate());
+    List<PortfolioTrade> portfolioTradeList = getPortfoloioTradeList(args); 
+    return portfolioManager.calculateAnnualizedReturn(portfolioTradeList, endDate);
+  }
 
   // TODO: CRIO_TASK_MODULE_CALCULATIONS
   //  Copy the relevant code from #mainReadQuotes to parse the Json into PortfolioTrade list and
@@ -136,11 +161,7 @@ public class PortfolioManagerApplication {
   //  startDate and endDate are already calculated in module2
   //  using the function you just wrote #calculateAnnualizedReturns
   //  Return the list of AnnualizedReturns sorted by annualizedReturns in descending order.
-  //  use gralde command like below to test your code
-  //  ./gradlew run --args="trades.json 2020-01-01"
-  //  ./gradlew run --args="trades.json 2019-07-01"
-  //  ./gradlew run --args="trades.json 2019-12-03"
-  //  where trades.json is your json file
+  
   public static final Comparator<AnnualizedReturn> arComparator = new 
       Comparator<AnnualizedReturn>() {         
     public int compare(AnnualizedReturn ar1, AnnualizedReturn ar2) {             
@@ -151,17 +172,16 @@ public class PortfolioManagerApplication {
 
   public static List<AnnualizedReturn> mainCalculateSingleReturn(String[] args)
       throws IOException, URISyntaxException {
-    List<PortfolioTrade> portfolioDataList = portfolioTrade(args);
-    List<TiingoCandle> tiingoClassObj = new ArrayList<TiingoCandle>();
+    List<PortfolioTrade> portfolioDataList = getPortfoloioTradeList(args);
+    List<TiingoCandle> tiingoClassObj;
     RestTemplate restTemplate = new RestTemplate();
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     LocalDate endDate = LocalDate.parse(args[1], formatter);
     String token = "dcec30ee2bde0aef1bff3e7b63d0e539db020c7c";
     List<AnnualizedReturn> annualizedReturns = new ArrayList<AnnualizedReturn>();
-    AnnualizedReturn ar;
+    AnnualizedReturn annulizedReturnObj;
     Double buyPrice;
     Double sellPrice;
-    List<LocalDate> endDList = listOfEndDate(tiingoClassObj);
     for (int j = 0;j < portfolioDataList.size();j++) {
       LocalDate startDate = portfolioDataList.get(j).getPurchaseDate();
       buyPrice = 0.0;
@@ -172,6 +192,7 @@ public class PortfolioManagerApplication {
       String result = restTemplate.getForObject(url, String.class);
       tiingoClassObj = getObjectMapper().readValue(result, 
           new TypeReference<List<TiingoCandle>>() {});
+      List<LocalDate> endDList = listOfEndDate(tiingoClassObj);
       for (int i = 0;i < tiingoClassObj.size();i++) {
         if (startDate.isEqual(tiingoClassObj.get(i).getDate())) {
           buyPrice = tiingoClassObj.get(i).getOpen();
@@ -185,8 +206,9 @@ public class PortfolioManagerApplication {
           }
         }
       }
-      ar = calculateAnnualizedReturns(endDate,portfolioDataList.get(j),buyPrice,sellPrice);
-      annualizedReturns.add(ar);
+      annulizedReturnObj = calculateAnnualizedReturns(endDate,portfolioDataList.get(j),
+          buyPrice,sellPrice);
+      annualizedReturns.add(annulizedReturnObj);
     }
     Collections.sort(annualizedReturns,arComparator);
     return annualizedReturns;
@@ -217,7 +239,7 @@ public class PortfolioManagerApplication {
     ThreadContext.put("runId", UUID.randomUUID().toString());
 
     
-    printJsonObject(mainCalculateSingleReturn(args));
+    printJsonObject(mainCalculateReturnsAfterRefactor(args));
 
   }
   // TODO: CRIO_TASK_MODULE_REST_API
@@ -254,7 +276,7 @@ public class PortfolioManagerApplication {
   public static List<String> mainReadQuotes(String[] args) throws URISyntaxException, IOException {
     String token = "dcec30ee2bde0aef1bff3e7b63d0e539db020c7c";
     List<TotalReturnsDto> trdObj = new ArrayList<TotalReturnsDto>();
-    List<PortfolioTrade> portfolioDataList = portfolioTrade(args);
+    List<PortfolioTrade> portfolioDataList = getPortfoloioTradeList(args);
     RestTemplate restTemplate = new RestTemplate();
     priceList(args, token, trdObj, portfolioDataList, restTemplate);
     Collections.sort(trdObj,priceComparator);
@@ -309,7 +331,7 @@ public class PortfolioManagerApplication {
     return endDateList;
   }
 
-  private static List<PortfolioTrade> portfolioTrade(String[] args)
+  private static List<PortfolioTrade> getPortfoloioTradeList(String[] args)
       throws URISyntaxException, IOException, JsonParseException, JsonMappingException {
     File file = resolveFileFromResources(args[0]);
     TypeReference<List<PortfolioTrade>> classTypeRef = new TypeReference<List<PortfolioTrade>>() {
@@ -318,6 +340,3 @@ public class PortfolioManagerApplication {
     return portfolioDataList;
   }
 }
-
-
-
