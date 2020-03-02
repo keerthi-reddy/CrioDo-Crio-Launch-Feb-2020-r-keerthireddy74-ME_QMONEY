@@ -242,6 +242,7 @@ public class PortfolioManagerApplication {
     printJsonObject(mainCalculateReturnsAfterRefactor(args));
 
   }
+
   // TODO: CRIO_TASK_MODULE_REST_API
   // Copy the relavent code from #mainReadFile to parse the Json into
   // PortfolioTrade list.
@@ -340,3 +341,5 @@ public class PortfolioManagerApplication {
     return portfolioDataList;
   }
 }
+
+
